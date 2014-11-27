@@ -56,7 +56,7 @@ app.get('/post', function (req, res) {
   var query = querystring.parse(query);
   console.log(query);
   var options = {
-    host: query.host,
+    host: query.url,
     path: query.path,
     port: ~~query.port || 80,
     method: 'GET',

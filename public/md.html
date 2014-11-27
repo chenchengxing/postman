@@ -17,47 +17,68 @@
     <section layout="row" flex>
       <md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left" md-is-locked-open="$media('md')">
         <md-toolbar class="md-theme-indigo">
-          <h1 class="md-toolbar-tools">Sidenav Left</h1>
+          <h1 class="md-toolbar-tools">YT-POSTMAN</h1>
         </md-toolbar>
         <md-content class="md-padding" ng-controller="LeftCtrl">
           <md-button ng-click="close()" class="md-primary" hide-gt-md>
-            Close Sidenav Left
+            Close
           </md-button>
-          <p hide show-gt-md>
-            This sidenav is locked open on your device. To go back to the default behavior,
-            narrow your display.
-          </p>
+          <h2>History</h2>
+          <div ng-repeat="item in histories">
+
+            <button class="menu-item menu-title md-menu-item"
+              ng-click="menu.toggleSelectSection(section)"
+              md-ink-ripple="#bbb">
+              {{item.url}}
+            </button>
+
+
+          </div>
         </md-content>
       </md-sidenav>
       <md-content flex class="md-padding">
-        <div layout="column" layout-fill layout-align="center center">
-          <p>
-          The left sidenav will 'lock open' on a medium (>=960px wide) device.
-          </p>
-          <div>
-            <md-button ng-click="toggleLeft()" class="md-primary" hide-gt-md>
-              Toggle left
-            </md-button>
-          </div>
-          <div>
-            <md-button ng-click="toggleRight()" class="md-primary">
-              Toggle right
-            </md-button>
-          </div>
+        <div layout-fill layout-align="center center" ng-controller="RightCtrl">
+          <md-content>
+            <form style="padding: 20px;">
+              <div layout="row">
+                <md-text-float label="Enter request URL here"  ng-model="request.url" flex="50" class="long"></md-text-float>
+                <md-radio-group ng-model="data.group1" flex>
+                  <md-radio-button value="Apple" aria-label="Label 1">GET</md-radio-button>
+                  <md-radio-button value="POST"> POST </md-radio-button>
+                </md-radio-group>
+              </div>
+              <div layout="row" ng-repeat="param in request.params">
+                <md-text-float label="URL Parameter Key"  ng-model="param.key"  ></md-text-float>
+                <md-text-float label="Value"  ng-model="param.value"  ></md-text-float>
+              </div>
+              <div layout="row" ng-repeat="header in request.headers">
+                <md-text-float label="Header"  ng-model="header.key"  ></md-text-float>
+                <md-text-float label="Value"  ng-model="header.value"  ></md-text-float>
+              </div>
+            </form>
+          </md-content>
+          <md-content>
+            <form style="padding: 20px;">
+              <md-button class="md-raised md-primary" ng-click="send()">Send</md-button>
+            </form>
+          </md-content>
+          <hr />
+          <md-content>
+            <md-tabs md-selected="selectedIndex">
+              <md-tab label="Body">
+                <pre>
+                  {{responseData.body}}
+                </pre>
+              </md-tab>
+            </md-tabs>
+          </md-content>
         </div>
       </md-content>
-      <md-sidenav class="md-sidenav-right md-whiteframe-z2" md-component-id="right">
-        <md-toolbar class="md-theme-light">
-          <h1 class="md-toolbar-tools">Sidenav Right</h1>
-        </md-toolbar>
-        <md-content ng-controller="RightCtrl" class="md-padding">
-          <md-button ng-click="close()" class="md-primary">
-            Close Sidenav Right
-          </md-button>
-        </md-content>
-      </md-sidenav>
+      
     </section>
   </div>
+  
+  
   
   <script>
 angular.module('app', ['ngMaterial', 'ngAnimate'])
@@ -70,13 +91,35 @@ angular.module('app', ['ngMaterial', 'ngAnimate'])
   };
 })
 .controller('LeftCtrl', function($scope, $timeout, $mdSidenav) {
+  $scope.histories = [{
+    url: 'http://baidu.com'
+  }]
   $scope.close = function() {
     $mdSidenav('left').close();
   };
 })
-.controller('RightCtrl', function($scope, $timeout, $mdSidenav) {
-  $scope.close = function() {
-    $mdSidenav('right').close();
+.controller('RightCtrl', function($scope, $timeout, $mdSidenav, $http) {
+  var lastOneFill = function (newValue, oldValue) {
+    if (newValue && newValue !== oldValue) {
+      if (newValue[newValue.length - 1].key || newValue[newValue.length - 1].value) {
+        newValue.push({});
+      }
+    }
+  };
+  $scope.$watch('request.params', lastOneFill, true);
+  $scope.$watch('request.headers', lastOneFill, true);
+  $scope.request = {
+       params:     [{}],
+       headers:     [{}],
+       url: 'm.baidu.com'
+    };
+  $scope.send = function () {
+    $http.get('/post', {
+      params: $scope.request
+    }).success(function (response) {
+      console.log(response);
+      $scope.responseData = response;
+    })
   };
 });
   </script>
