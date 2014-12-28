@@ -5,6 +5,7 @@
   <title>Document</title>
   <link rel="stylesheet" href="angular-material.css">
   <link rel="stylesheet" href="md.css">
+  <link rel="stylesheet" href="bower_components/rainbow/themes/github.css">
   <script src="angular.js"></script>
   <script src="angular-animate.js"></script>
   <script src="angular-route.js"></script>
@@ -42,8 +43,8 @@
             <form style="padding: 20px;">
               <div layout="row">
                 <md-text-float label="Enter request URL here"  ng-model="request.url" flex="50" class="long"></md-text-float>
-                <md-radio-group ng-model="data.group1" flex>
-                  <md-radio-button value="Apple" aria-label="Label 1">GET</md-radio-button>
+                <md-radio-group ng-model="request.method" flex>
+                  <md-radio-button value="GET" aria-label="Label 1">GET</md-radio-button>
                   <md-radio-button value="POST"> POST </md-radio-button>
                 </md-radio-group>
               </div>
@@ -67,7 +68,14 @@
             <md-tabs md-selected="selectedIndex">
               <md-tab label="Body">
                 <pre>
-                  {{responseData.body}}
+                  <code data-language="html" rainbow>
+{{responseBody}}
+                  </code>
+                </pre>
+              </md-tab>
+              <md-tab label="raw">
+                <pre>
+{{responseRaw}}
                 </pre>
               </md-tab>
             </md-tabs>
@@ -77,8 +85,12 @@
       
     </section>
   </div>
-  
-  
+  <script src="bower_components/rainbow/js/rainbow.min.js"></script>
+  <script src="bower_components/rainbow/js/language/javascript.js"></script>
+  <script src="bower_components/rainbow/js/language/generic.js"></script>
+  <script src="bower_components/rainbow/js/language/html.js"></script>
+  <script src="bower_components/rainbow/js/language/css.js"></script>
+  <script src="vkbeautify.js"></script>
   
   <script>
 angular.module('app', ['ngMaterial', 'ngAnimate'])
@@ -106,22 +118,109 @@ angular.module('app', ['ngMaterial', 'ngAnimate'])
       }
     }
   };
-  $scope.$watch('request.params', lastOneFill, true);
+  var generateQueryString = function (params) {
+    var result = [];
+    for (var i = 0; i < params.length; i++) {
+      var item = '';
+      if (params[i].key) {
+        item = params[i].key + '=';
+      }
+      if (item && params[i].value) {
+        item = item + params[i].value;
+      }
+      if (item) {
+        result.push(item);
+      }
+    }
+    return result.join('&');
+  };
+  $scope.$watch('request.params', function (newValue, oldValue) {
+    lastOneFill(newValue, oldValue);
+    if (newValue && newValue !== oldValue) {
+      var parse_url = /^(?:([A-Za-z]+):)?(\/{0,3})([0-9.\-A-Za-z]+)(?::(\d+))?(?:\/([^?#]*))?(?:\?([^#]*))?(?:#(.*))?$/;
+      var url = $scope.request.url.replace(parse_url, function (match, capture) {
+        var capture = [].slice.call(arguments, 0);
+        var url = '';
+        if (capture[1] && capture[2]) {
+          url += capture[1] + ':' + capture[2];// http://
+        }
+        url += capture[3];// http://www.baidu.com
+        if (capture[4]) {
+          url += ':' + capture[4]; //http://www.baidu.com:80
+        }
+        if (capture[5]) {
+          url += '/' + capture[5]; //http://www.baidu.com/path/path
+        }
+        if (generateQueryString(newValue)) {
+          url += '?' + generateQueryString(newValue);// http://www.baidu.com/path?pa=1
+        }
+        if (capture[7]) {
+          url += '#' + capture[7];
+        }
+        return url;
+      });
+      $scope.request.url = url;
+    }
+  }, true);
   $scope.$watch('request.headers', lastOneFill, true);
   $scope.request = {
-       params:     [{}],
-       headers:     [{}],
-       url: 'm.baidu.com'
-    };
-  $scope.send = function () {
-    $http.get('/post', {
-      params: $scope.request
-    }).success(function (response) {
-      console.log(response);
-      $scope.responseData = response;
-    })
+     params:     [{}],
+     headers:     [{}],
+     url: 'm.baidu.com',
+     method: 'GET'
   };
-});
+  $scope.send = function () {
+    var requestOptions = angular.copy($scope.request);
+    //automatically add http protocol if not defined
+    if (!/^[\w]{1,4}:\/\//.test(requestOptions.url)) {
+      requestOptions.url = 'http://' + requestOptions.url;
+    }
+    
+    //filter uncompleted header
+    var headers = {};
+    for (var i = 0; i < requestOptions.headers.length; i++) {
+      if (requestOptions.headers[i].key && requestOptions.headers[i].value) {
+        headers[requestOptions.headers[i].key]  = requestOptions.headers[i].value;
+      }
+    }
+    requestOptions.headers = headers;
+    //make request now!
+    $http.post('makeRequest', angular.toJson(requestOptions)).success(function (data, status, headers, config) {
+      console.log(data);
+      // $scope.responseBody = data.body;
+      $scope.responseBody = vkbeautify.xml(data.body);
+      $scope.responseRaw = data.body;
+
+    });
+    // $http.get('/post', {
+    //   params: {
+    //     url: 'angularjs.cn',
+    //     path: '/A003',
+    //     port: 80
+    //   }
+    // }).success(function (data, status, headers, config) {
+    //   console.log(data);
+    //   $scope.responseData = data;
+    // })
+  };
+})
+.directive('rainbow', ['$timeout', function ($timeout) {
+  return {
+    restrict: 'A',
+    link: function ($scope, element, attrs) {
+      // $timeout(function () {
+        $scope.$watch('responseBody', function (newValue, oldValue) {
+          if (newValue && newValue !== oldValue) {
+            Rainbow.color(newValue, 'javascript', function(highlighted_code) {
+              element.html(highlighted_code);
+            });
+          }
+        })
+        
+      // });
+    }
+  };
+}])
   </script>
 </body>
 </html>

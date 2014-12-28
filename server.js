@@ -38,10 +38,78 @@
 
 var querystring = require('querystring');
 var http = require('http');
-var url = require('url');
+var urlParser = require('url');
 var express = require('express')
-var app = express()
+var bodyParser = require('body-parser')
+var request = require('request');
+
+var app = express();
+app.use( bodyParser.json() );       // to support JSON-encoded bodies
+app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
+  extended: true
+}));
 app.use(express.static(__dirname + '/public'));
+
+var server = app.listen(3000, function () {
+  var host = server.address().address;
+  var port = server.address().port;
+  console.log('Example app listening at http://%s:%s', host, port);
+});
+
+app.post('/makeRequest', function(req, res) {
+  var url = req.body.url;
+  var method = req.body.method;
+  var params = req.body.params;
+  var headers = req.body.headers;
+  var query = urlParser.parse(url);
+
+  // console.log(query, url, method, params, headers);
+  var options = {
+    host: query.hostname,
+    path: query.path,
+    port: ~~query.port || 80,
+    method: method,
+    headers: {
+        'Accept': 'text/html'
+    }
+  };
+
+  request({
+    url: url
+
+  }, function (error, response, body) {
+    if (!error && response.statusCode == 200) {
+      // console.log(body) // Print the google web page.
+      res.write(JSON.stringify({
+        body: body
+      }));
+      res.end();
+    }
+  });
+  // var responseBody = '';
+  // console.log(options);
+  // var makeRequest = http.request(options, function (makeResponse) {
+  //   makeResponse.on('data', function (chunk) {
+  //     console.log('got %d bytes of data', chunk.length);
+  //     responseBody += chunk;
+  //   });
+  //   makeResponse.on('end', function () {
+  //     res.writeHead(makeResponse.statusCode, makeResponse.headers);
+  //     res.write(responseBody);
+  //     res.end();
+  //   });
+  // });
+  // //write to request making when there's any
+  // req.addListener('data', function (chunk) {
+  //   makeRequest.write(chunk);
+  // });
+  // req.addListener('end', function () {
+  //   makeRequest.end();
+  // });
+  // makeRequest.on('error', function (e) {
+  //   console.error('problem with request: ' + e.message);
+  // });
+});
 /**
 {
   url: 'angularjs.cn',
@@ -51,7 +119,7 @@ app.use(express.static(__dirname + '/public'));
 */
 app.get('/post', function (req, res) {
   
-  var query = url.parse(req.url).query;
+  var query = urlParser.parse(req.url).query;
   // console.log(query);
   var query = querystring.parse(query);
   console.log(query);
@@ -78,9 +146,7 @@ app.get('/post', function (req, res) {
           body: body,
           name: 1
         });
-        res.writeHead(serverRes.statusCode, {
-          'Content-Type': 'application/json'
-        });
+        res.writeHead(serverRes.statusCode, serverRes.headers);
         res.write(chunkBody);
         res.end();
       });
@@ -102,11 +168,3 @@ app.get('/post', function (req, res) {
   // res.end();
 })
 
-var server = app.listen(3000, function () {
-
-  var host = server.address().address
-  var port = server.address().port
-
-  console.log('Example app listening at http://%s:%s', host, port)
-
-})

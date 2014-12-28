@@ -23,11 +23,13 @@
 var options = {
     host: 'm.baidu.com',
     path: '/',
+    port: 80,
     method: 'GET',
     headers: {
         'Accept': 'text/html'
     }
 };
+console.log(options)
 var req = http.request(options, function(res) {
     res.setEncoding('utf8');
     res.on('data', function(data) {
