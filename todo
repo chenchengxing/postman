@@ -1,0 +1,10 @@
+1.错误的请求信息的展示 del
+2.url和params的同步 del
+3.post data bug del
+4.history (later)
+5.status 显示 del
+6.common headers add more
+7.post data support more (later)
+  1) form data
+  2) x-www-form-urlencoded
+  3)raw

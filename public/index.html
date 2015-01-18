@@ -2,53 +2,166 @@
 <html lang="en" ng-app="app">
 <head>
   <meta charset="UTF-8">
-  <title>Document</title>
-  <link rel="stylesheet" href="bootstrap/dist/css/bootstrap.min.css">
+  <title>yt POSTMAN</title>
+  <link rel="stylesheet" href="bower_components/angular-material/angular-material.css">
+  <!-- <link rel="stylesheet" href="md.css"> -->
+  <link rel="stylesheet" href="bower_components/rainbow/themes/github.css">
+  <script src="bower_components/angular/angular.js"></script>
+  <script src="bower_components/angular-animate/angular-animate.js"></script>
+  <script src="bower_components/angular-aria/angular-aria.js"></script>
+  <script src="bower_components/angular-material/angular-material.js"></script>
+  <script src="bower_components/hammerjs/hammer.js"></script>
+
+  <script src="bower_components/codemirror/lib/codemirror.js"></script>
+  <link rel="stylesheet" href="bower_components/codemirror/lib/codemirror.css">
+  <link rel="stylesheet" href="bower_components/codemirror/addon/fold/foldgutter.css">
+  <script src="bower_components/codemirror/mode/javascript/javascript.js"></script>
+  <script src="bower_components/codemirror/addon/fold/foldcode.js"></script>
+  <script src="bower_components/codemirror/addon/fold/foldgutter.js"></script>
+  <script src="bower_components/codemirror/addon/fold/brace-fold.js"></script>
+  <script src="bower_components/codemirror/addon/fold/xml-fold.js"></script>
+  <script src="bower_components/codemirror/addon/fold/markdown-fold.js"></script>
+  <script src="bower_components/codemirror/addon/fold/comment-fold.js"></script>
+  <script src="bower_components/codemirror/addon/display/placeholder.js"></script>
+  <!-- // <script src="bower_components/angular-ui-codemirror/ui-codemirror.js"></script> -->
+  <link rel="stylesheet" type="text/css" href="index.css">
 </head>
-<body>
-<div ng-controller="Ctrl">
-  <nav class="navbar navbar-default" role="navigation">
-    <div class="container-fluid">
-      <button class="btn btn-default" ng-click="send()">send</button>
-      <input type="text" ng-model="q.host" placeholder="host">
-      <input type="text" ng-model="q.port" placeholder="port">
-    </div>
-  </nav>
-  <div class="container">
-    <div class="row">
-      <div class="col-2"></div>
-      <div class="col-10">
-      <tabset>
-        <tab heading="Response Body">
-          <pre>{{responseData.body}}</pre>
-        </tab>
-        <tab>
-          <tab-heading>
-            Headers
-          </tab-heading>
-          {{responseData.name}}
-        </tab>
-      </tabset>
-        
-      </div>
-    </div>
+<body ng-cloak>
+  <div ng-controller="AppCtrl" layout="column" layout-fill>
+    <section layout="row" flex>
+      <md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left" md-is-locked-open="$media('md')">
+        <md-toolbar class="md-theme-indigo">
+          <h1 class="md-toolbar-tools">YT-POSTMAN</h1>
+        </md-toolbar>
+        <md-content class="md-padding" ng-controller="LeftCtrl" ng-if="false">
+          <md-button ng-click="close()" class="md-primary" hide-gt-md>
+            Close
+          </md-button>
+          <h2>History</h2>
+          <div ng-repeat="item in histories">
+
+            <button class="menu-item menu-title md-menu-item"
+              ng-click="menu.toggleSelectSection(section)"
+              md-ink-ripple="#bbb">
+              {{item.url}}
+            </button>
+
+
+          </div>
+        </md-content>
+      </md-sidenav>
+      <md-content flex class="md-padding">
+        <div layout-fill layout-align="center center" ng-controller="RightCtrl" style="padding: 20px;" ng-keypress="urlKeyUp($event)">
+          <md-content>
+            <div layout="row">
+              <md-text-float label="Enter request URL here{{request.url && '  (Press \'Enter\' to send)' || ''}}" ng-model="request.url" class="long" url-focus></md-text-float>
+            </div>
+            <div ng-if="request.url" layout="row" style="padding-left: 50px;">
+              <md-radio-group ng-model="request.method" flex>
+                <md-radio-button value="GET" aria-label="Label 1">GET</md-radio-button>
+                <md-radio-button value="POST"> POST </md-radio-button>
+              </md-radio-group>
+            </div>
+           <!--  <div ng-if="request.url" layout="row" ng-repeat="param in request.params">
+              <md-text-float label="URL Parameter Key"  ng-model="param.key"  ></md-text-float>
+              <md-text-float label="Value"  ng-model="param.value" class="middle"></md-text-float>
+              <md-button class="md-warn" ng-hide="$last" ng-click="removeParam($index)">-</md-button>
+            </div> -->
+            <div ng-if="request.url" layout="row" ng-repeat="header in request.headers">
+              <md-text-float label="Header"  ng-model="header.key"></md-text-float>
+              <md-text-float label="Value"  ng-model="header.value" class="middle" title="{{header.value}}"></md-text-float>
+              <md-button class="md-warn" ng-hide="$last" ng-click="removeHeader($index)">-</md-button>
+              <select ng-model="q.headerToAdd" ng-options="header.name group by header.cate for header in q.commonHeaders" ng-show="$last" style="margin-top: 30px;margin-left: 2px;">
+                <option value="">-- Common Headers --</option>
+              </select>
+            </div>
+            <div layout="row" ng-if="request.method === 'POST'" class="postdata-textarea-container" style="margin-top:20px;">
+              <textarea code-mirror ng-model="request.postData" placeholder="POST data goes here...(raw data only)"></textarea>
+            </div>
+          </md-content>
+          <md-content style="padding: 20px 0;">
+            <md-button class="md-raised md-primary" ng-click="send()">Send</md-button>
+          </md-content>
+          <md-content ng-if="postResult.error || postResult.raw || postResult.body">
+            <md-tabs md-selected="selectedIndex" class="md-accent">
+              <md-tab label="ERROR" ng-if="postResult.error">
+                <pre style="margin-top:0">
+{{postResult.error}}
+                </pre>
+              </md-tab>
+              <md-tab label="Body" ng-if="postResult.body">
+                <textarea code-mirror ng-model="postResult.body"></textarea>
+              </md-tab>
+              <md-tab label="raw" ng-if="postResult.raw">
+                <pre style="margin-top:0">
+{{postResult.raw}}
+                </pre>
+              </md-tab>
+            </md-tabs>
+          </md-content>
+        </div>
+      </md-content>
+
+    </section>
   </div>
-</div>
-  <script src="angular.js"></script>
-  <script src="ui-bootstrap-tpls.js"></script>
+  <script src="bower_components/rainbow/js/rainbow.min.js"></script>
+  <script src="bower_components/rainbow/js/language/javascript.js"></script>
+  <script src="bower_components/rainbow/js/language/generic.js"></script>
+  <script src="bower_components/rainbow/js/language/html.js"></script>
+  <script src="bower_components/rainbow/js/language/css.js"></script>
+  <script src="vkbeautify.js"></script>
+
   <script>
-  angular.module('app', ['ui.bootstrap'])
-    .controller('Ctrl', function ($scope, $http) {
-      $scope.q = {};
-      $scope.send = function () {
-        $http.get('/post', {
-          params: $scope.q
-        }).success(function (response) {
-          console.log(response);
-          $scope.responseData = response;
-        })
-      };
-    })
-  </script>
-</html>
+//   var myCodeMirror = CodeMirror(document.body, {
+//   value: "function myScript(){\nreturn 100;\n}\n",
+//   mode:  {name: "javascript", json: true},
+//   foldGutter: true,
+//   // lineNumbers: true,
+//     lineWrapping: true,
+//     gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+// });
+//   myCodeMirror.foldCode(CodeMirror.Pos(13, 0));
+// var te = document.getElementById("code");
+// te.value = JSON.stringify({
+//   "@context": {
+//     "name": "http://schema.org/name",
+//     "description": "http://schema.org/description",
+//     "image": {
+//       "@id": "http://schema.org/image",
+//       "@type": "@id"
+//     },
+//     "geo": "http://schema.org/geo",
+//     "latitude": {
+//       "@id": "http://schema.org/latitude",
+//       "@type": "xsd:float"
+//     },
+//     "longitude": {
+//       "@id": "http://schema.org/longitude",
+//       "@type": "xsd:float"
+//     },
+//     "xsd": "http://www.w3.org/2001/XMLSchema#"
+//   },
+//   "name": "The Empire State Building",
+//   "description": "The Empire State Building is a 102-story landmark in New York City.",
+//   "image": "http://www.civil.usherbrooke.ca/cours/gci215a/empire-state-building.jpg",
+//   "geo": {
+//     "latitude": "40.75",
+//     "longitude": "73.98"
+//   }
+// });
+// window.editor = CodeMirror.fromTextArea(te, {
+//     mode: "application/json",
+//     lineNumbers: true,
+//     lineWrapping: true,
+//     extraKeys: {"Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }},
+//     foldGutter: true,
+//     gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+//   });
+//   editor.foldCode(CodeMirror.Pos(13, 0));
+// angular.module('app', ['ngMaterial', 'ngAnimate']);
+
+</script>
+<script type="text/javascript" src="index.js"></script>
+
 </body>
+</html>

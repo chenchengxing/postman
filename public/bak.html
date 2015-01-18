@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="app">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <link rel="stylesheet" href="bootstrap/dist/css/bootstrap.min.css">
+</head>
+<body>
+<div ng-controller="Ctrl">
+  <nav class="navbar navbar-default" role="navigation">
+    <div class="container-fluid">
+      <button class="btn btn-default" ng-click="send()">send</button>
+      <input type="text" ng-model="q.host" placeholder="host">
+      <input type="text" ng-model="q.port" placeholder="port">
+    </div>
+  </nav>
+  <div class="container">
+    <div class="row">
+      <div class="col-2"></div>
+      <div class="col-10">
+      <tabset>
+        <tab heading="Response Body">
+          <pre>{{responseData.body}}</pre>
+        </tab>
+        <tab>
+          <tab-heading>
+            Headers
+          </tab-heading>
+          {{responseData.name}}
+        </tab>
+      </tabset>
+        
+      </div>
+    </div>
+  </div>
+</div>
+  <script src="angular.js"></script>
+  <script src="ui-bootstrap-tpls.js"></script>
+  <script>
+  angular.module('app', ['ui.bootstrap'])
+    .controller('Ctrl', function ($scope, $http) {
+      $scope.q = {};
+      $scope.send = function () {
+        $http.get('/post', {
+          params: $scope.q
+        }).success(function (response) {
+          console.log(response);
+          $scope.responseData = response;
+        })
+      };
+    })
+  </script>
+</html>
+</body>

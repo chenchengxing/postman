@@ -1,0 +1,27 @@
+{
+  "name": "postman",
+  "version": "0.0.0",
+  "homepage": "https://github.com/chenchengxing/postman",
+  "authors": [
+    "陈承星 <ccxsungodzzx@gmail.com>"
+  ],
+  "description": "postman",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "public/bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular-material": "~0.6.1",
+    "rainbow": "~1.1.9",
+    "codemirror": "~4.9.0",
+    "angular-ui-codemirror": "~0.2.2"
+  },
+  "resolutions": {
+    "angular-material": "~0.6.1"
+  }
+}
